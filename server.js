@@ -67,34 +67,167 @@ app.post("/signup", (req, res, next) => {
             message: "Please Provide Username & Password"
         });
     }
+
     Bycrypt.stringToHash(JSON.stringify(req.body.password)).then(passwordHash => {
         var newUser = new users({
             userName: req.body.userName,
             password: passwordHash
-        })
+        });
         newUser.save((err, data) => {
             if (!err) {
                 res.send({
                     message: "Sign UP SuccessFully",
                     status: 200
-                })
+                });
             }
-            else{
+            else {
 
                 res.send({
-                    message: "User Error "+err,
+                    message: "User Error " + err,
                     status: 200
-                })
-                
+                });
+
+            }
+        });
+
+    });
+})
+app.post("/login", (req, res, next) => {
+    if (!req.body || !req.body.userName || !req.body.password) {
+        res.send({
+            message: "Info Missing",
+            status: 404
+        });
+    }
+    newUser.find({ userName: req.body.userName })
+        .then((currentUser) => {
+            currentUser = currentUser[0];
+            console.log("Current User :", currentUser);
+            console.log("Current UserName And Password :", currentUser.password);
+            if (currentUser) {
+                Bycrypt.varifyHash(JSON.stringify(req.body.password), currentUser.password)
+                    .then(passwordVerifed => {
+                        console.log("Password Verifiy ", passwordVerifed);
+                        if (passwordVerifed) {
+                            let tokenData = {
+                                ip: req.socket.remoteAddress,
+                                browserName: req.useragent.browser
+                            };
+                            console.log("Tokan Data 1", JSON.stringify(tokenData));
+                            Bycrypt.stringToHash(JSON.stringify(tokenData))
+                                .then(token => {
+                                    sessions.create({
+                                        token: token,
+                                        expire: new Date().getTime() + (1000 * 60)
+                                    }).then(() => {
+                                        console.log("User Session ", sessions);
+                                        res.json({
+                                            "token": token
+                                        })
+                                    })
+                                })
+
+                        } else {
+                            res.send("Password in invalid")
+                            console.log("Password is invalid");
+                        }
+                    }).catch(e => {
+                        console.log("error: ", e)
+                    })
+            } else {
+                res.send("Invalid username or password || user not found")
             }
         })
+})
+app.get("/profile", (req, res, next) => {
+    if (!req.query.token) {
+        res.send("Token is Missing")
+    }
+    sessions.find({ token: req.query.token })
+        .then((session) => {
+            session = session[0],
+                console.log("Indivision Session ", session);
+            if (new Date().getTime() > session.expire) {
+                res.send({
+                    status: 404,
+                    message: "Token Expire"
+                })
+            }
+            Bycrypt.validateHash(req.query.token)
+                .then(isValidTokenHash => {
+                    if (isValidTokenHash) {
+                        console.log("Hash is Valid");
 
-    })
+                        let tokenData = {
+                            ip: req.socket.remoteAddress,
+                            browserName: req.useragent.browser
+                        }
+                        Bycrypt.varifyHash(JSON.stringify(tokeData), session.token)
+                            .then(hashVerified => {
+                                if (hashVerified) {
+                                    res.send({
+                                        message: "Welcome TO Profile"
+                                    })
+                                } else {
+                                    res.send("Hash is invalid");
+                                    console.log("hash is not valid");
+                                }
+                            }).catch(e => {
+                                console.log("Error :", e);
+                            })
+
+                    } else {
+                        res.send("Not valid token")
+                        console.log("hash is invalid")
+                    }
+                })
+        })
 })
 
+app.get("/Dashboard", (req, res, next) => {
+    if (!req.query.token) {
+        res.send("token is Missing")
+    }
+    sessions.find({ token: req.query.token })
+        .then((session) => {
+            session = session[0],
+                console.log("Indivision Session ", session);
+            if (new Date().getTime() > session.expire) {
+                res.send({
+                    status: 404,
+                    message: "Token Expire"
+                })
+            }
+            Bycrypt.validateHash(req.query.token)
+                .then(isValidTokenHash => {
+                    if (isValidTokenHash) {
+                        console.log("Hash is Valid");
 
+                        let tokenData = {
+                            ip: req.socket.remoteAddress,
+                            browserName: req.useragent.browser
+                        }
+                        Bycrypt.varifyHash(JSON.stringify(tokeData), session.token)
+                            .then(hashVerified => {
+                                if (hashVerified) {
+                                    res.send({
+                                        message: "Welcome TO Profile"
+                                    })
+                                } else {
+                                    res.send("Hash is invalid");
+                                    console.log("hash is not valid");
+                                }
+                            }).catch(e => {
+                                console.log("Error :", e);
+                            })
 
-
+                    } else {
+                        res.send("Not valid token")
+                        console.log("hash is invalid")
+                    }
+                })
+        })
+})
 
 
 
