@@ -39,6 +39,8 @@ process.on("SIGINT", function () {
 });
 
 mongoose.set('useCreateIndex', true);
+
+
 var userSchema = new mongoose.Schema({
     userName: { type: String, required: true, unique: true },
     password: { type: String, required: true }
@@ -62,7 +64,7 @@ app.post("/signup", (req, res, next) => {
     if (!req.body.userName || !req.body.password) {
         console.log("Something Missing");
         res.send({
-            message: "Please Provide Username Password"
+            message: "Please Provide Username & Password"
         });
     }
     Bycrypt.stringToHash(JSON.stringify(req.body.password)).then(passwordHash => {
@@ -88,9 +90,6 @@ app.post("/signup", (req, res, next) => {
         })
 
     })
-
-
-
 })
 
 
